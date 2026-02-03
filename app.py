@@ -8,12 +8,11 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from Pb2 import DEcwHisPErMsG_pb2 , MajoRLoGinrEs_pb2 , PorTs_pb2 , MajoRLoGinrEq_pb2 , sQ_pb2 , Team_msg_pb2
 from cfonts import render, say
-import asyncio
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-import random
+
 
 #EMOTES BY YASH X CODEX
+
+
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  
 
@@ -27,8 +26,7 @@ spam_chat_id = None
 spam_uid = None
 Spy = False
 Chat_Leave = False
-BOT_UID = None 
-loop = None # Global loop variable
+BOT_UID = None # Global variable initialize
 #------------------------------------------#
 
 app = Flask(__name__)
@@ -224,21 +222,6 @@ async def SEndPacKeT(OnLinE , ChaT , TypE , PacKeT):
     if TypE == 'ChaT' and ChaT: whisper_writer.write(PacKeT) ; await whisper_writer.drain()
     elif TypE == 'OnLine': online_writer.write(PacKeT) ; await online_writer.drain()
     else: return 'UnsoPorTed TypE ! >> ErrrroR (:():)' 
-
-# ---------- HEARTBEAT FUNCTION TO FIX OFFLINE PROBLEM ----------
-async def KeepAliveTask(writer):
-    """Sends a keep-alive packet every 20 seconds to stay online"""
-    while True:
-        try:
-            if writer is None or writer.is_closing():
-                break
-            # Usually sending a specific packet is best, but often just checking the connection works
-            # If you have a specific Heartbeat packet in xC4, use it here. 
-            # Otherwise, we rely on the system not to timeout.
-            await asyncio.sleep(20)
-        except:
-            break
-# --------------------------------------------------------------
            
 async def TcPOnLine(ip, port, key, iv, AutHToKen, reconnect_delay=0.5):
     global online_writer , spam_room , whisper_writer , spammer_uid , spam_chat_id , spam_uid , XX , uid , Spy,data2, Chat_Leave
@@ -249,30 +232,44 @@ async def TcPOnLine(ip, port, key, iv, AutHToKen, reconnect_delay=0.5):
             bytes_payload = bytes.fromhex(AutHToKen)
             online_writer.write(bytes_payload)
             await online_writer.drain()
-            
-            # Start KeepAlive to prevent "Team Offline"
-            asyncio.create_task(KeepAliveTask(writer))
-
             while True:
                 data2 = await reader.read(9999)
                 if not data2: break
                 
-                # Logic to auto-join chat if invited
                 if data2.hex().startswith('0500') and len(data2.hex()) > 1000:
                     try:
                         print(data2.hex()[10:])
                         packet = await DeCode_PackEt(data2.hex()[10:])
+                        print(packet)
                         packet = json.loads(packet)
                         OwNer_UiD , CHaT_CoDe , SQuAD_CoDe = await GeTSQDaTa(packet)
 
                         JoinCHaT = await AutH_Chat(3 , OwNer_UiD , CHaT_CoDe, key,iv)
                         await SEndPacKeT(whisper_writer , online_writer , 'ChaT' , JoinCHaT)
-                        
+
+
                         message = f'[B][C]{get_random_color()}\n- WeLComE To Emote Bot ! '
                         P = await SEndMsG(0 , message , OwNer_UiD , OwNer_UiD , key , iv)
                         await SEndPacKeT(whisper_writer , online_writer , 'ChaT' , P)
+
                     except:
-                        pass
+                        if data2.hex().startswith('0500') and len(data2.hex()) > 1000:
+                            try:
+                                print(data2.hex()[10:])
+                                packet = await DeCode_PackEt(data2.hex()[10:])
+                                print(packet)
+                                packet = json.loads(packet)
+                                OwNer_UiD , CHaT_CoDe , SQuAD_CoDe = await GeTSQDaTa(packet)
+
+                                JoinCHaT = await AutH_Chat(3 , OwNer_UiD , CHaT_CoDe, key,iv)
+                                await SEndPacKeT(whisper_writer , online_writer , 'ChaT' , JoinCHaT)
+
+
+                                message = f'[B][C]{get_random_color()}\n- WeLComE To Emote Bot ! \n\n{get_random_color()}- Commands : @a {xMsGFixinG("123456789")} {xMsGFixinG("909000001")}\n\n[00FF00]Dev : @{xMsGFixinG("DEVXTLIVE")}'
+                                P = await SEndMsG(0 , message , OwNer_UiD , OwNer_UiD , key , iv)
+                                await SEndPacKeT(whisper_writer , online_writer , 'ChaT' , P)
+                            except:
+                                pass
 
             online_writer.close() ; await online_writer.wait_closed() ; online_writer = None
 
@@ -291,39 +288,234 @@ async def TcPChaT(ip, port, AutHToKen, key, iv, LoGinDaTaUncRypTinG, ready_event
             whisper_writer.write(bytes_payload)
             await whisper_writer.drain()
             ready_event.set()
-            
             if LoGinDaTaUncRypTinG.Clan_ID:
                 clan_id = LoGinDaTaUncRypTinG.Clan_ID
                 clan_compiled_data = LoGinDaTaUncRypTinG.Clan_Compiled_Data
                 print('\n - TarGeT BoT in CLan ! ')
+                print(f' - Clan Uid > {clan_id}')
+                print(f' - BoT ConnEcTed WiTh CLan ChaT SuccEssFuLy ! ')
                 pK = await AuthClan(clan_id , clan_compiled_data , key , iv)
                 if whisper_writer: whisper_writer.write(pK) ; await whisper_writer.drain()
-                
             while True:
                 data = await reader.read(9999)
                 if not data: break
                 
                 if data.hex().startswith("120000"):
+
+                    msg = await DeCode_PackEt(data.hex()[10:])
+                    chatdata = json.loads(msg)
                     try:
                         response = await DecodeWhisperMessage(data.hex()[10:])
                         uid = response.Data.uid
                         chat_id = response.Data.Chat_ID
+                        XX = response.Data.chat_type
                         inPuTMsG = response.Data.msg.lower()
-                        
-                        # Existing Command Logic
-                        if inPuTMsG.startswith("leave"):
+                    except:
+                        response = None
+
+
+                    if response:
+                        if inPuTMsG.startswith(("/5")):
+                            try:
+                                dd = chatdata['5']['data']['16']
+                                print('msg in private')
+                                message = f"[B][C]{get_random_color()}\n\nAccepT My InV FasT\n\n"
+                                P = await SEndMsG(response.Data.chat_type , message , uid , chat_id , key , iv)
+                                await SEndPacKeT(whisper_writer , online_writer , 'ChaT' , P)
+                                PAc = await OpEnSq(key , iv,region)
+                                await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , PAc)
+                                C = await cHSq(5, uid ,key, iv,region)
+                                await asyncio.sleep(0.5)
+                                await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , C)
+                                V = await SEnd_InV(5 , uid , key , iv,region)
+                                await asyncio.sleep(0.5)
+                                await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , V)
+                                E = await ExiT(None , key , iv)
+                                await asyncio.sleep(3)
+                                await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , E)
+                            except:
+                                print('msg in squad')
+
+
+
+                        if inPuTMsG.startswith('/x/'):
+                            CodE = inPuTMsG.split('/x/')[1]
+                            try:
+                                dd = chatdata['5']['data']['16']
+                                print('msg in private')
+                                EM = await GenJoinSquadsPacket(CodE , key , iv)
+                                await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , EM)
+
+
+                            except:
+                                print('msg in squad')
+
+                        if inPuTMsG.startswith('leave'):
                             leave = await ExiT(uid,key,iv)
                             await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , leave)
 
-                    except:
+                        if inPuTMsG.strip().startswith('/s'):
+                            EM = await FS(key , iv)
+                            await SEndPacKeT(whisper_writer , online_writer , 'OnLine' , EM)
+
+
+                        if inPuTMsG.strip().startswith('/f'):
+
+                            try:
+                                dd = chatdata['5']['data']['16']
+                                print('msg in private')
+                                message = f"[B][C]{get_random_color()}\n\nOnLy In SQuaD ! \n\n"
+                                P = await SEndMsG(response.Data.chat_type, message, uid, chat_id, key, iv)
+                                await SEndPacKeT(whisper_writer, online_writer, 'ChaT', P)
+
+                            except:
+                                print('msg in squad')
+
+                                parts = inPuTMsG.strip().split()
+                                print(response.Data.chat_type, uid, chat_id)
+                                message = f'[B][C]{get_random_color()}\nACITVE TarGeT -> {xMsGFixinG(uid)}\n'
+
+                                P = await SEndMsG(response.Data.chat_type, message, uid, chat_id, key, iv)
+
+                                uid2 = uid3 = uid4 = uid5 = uid6 = None
+                                s = False
+
+                                try:
+                                    uid = int(parts[1])
+                                    uid2 = int(parts[2])
+                                    uid3 = int(parts[3])
+                                    uid4 = int(parts[4])
+                                    uid5 = int(parts[5])
+                                    uid6 = int(parts[6])
+                                    idT = int(parts[6])
+
+                                except ValueError as ve:
+                                    print("ValueError:", ve)
+                                    s = True
+
+                                except Exception:
+                                    idT = len(parts) - 1
+                                    idT = int(parts[idT])
+                                    print(idT)
+                                    print(uid)
+
+                                if not s:
+                                    try:
+                                        await SEndPacKeT(whisper_writer, online_writer, 'ChaT', P)
+
+                                        # 🚀 Super Fast Emote Loop
+                                        for i in range(200):  # repeat count
+                                            print(f"Fast Emote {i+1}")
+                                            H = await Emote_k(uid, idT, key, iv, region)
+                                            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+
+                                            if uid2:
+                                                H = await Emote_k(uid2, idT, key, iv, region)
+                                                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                            if uid3:
+                                                H = await Emote_k(uid3, idT, key, iv, region)
+                                                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                            if uid4:
+                                                H = await Emote_k(uid4, idT, key, iv, region)
+                                                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                            if uid5:
+                                                H = await Emote_k(uid5, idT, key, iv, region)
+                                                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                            if uid6:
+                                                H = await Emote_k(uid6, idT, key, iv, region)
+                                                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+
+                                            await asyncio.sleep(0.08)  # ⚡ super-fast delay
+
+                                    except Exception as e:
+                                        print("Fast emote error:", e)
+
+                        if inPuTMsG.strip().startswith('/d'):
+
+                            try:
+                                dd = chatdata['5']['data']['16']
+                                print('msg in private')
+                                message = f"[B][C]{get_random_color()}\n\nOnLy In SQuaD ! \n\n"
+                                P = await SEndMsG(response.Data.chat_type, message, uid, chat_id, key, iv)
+                                await SEndPacKeT(whisper_writer, online_writer, 'ChaT', P)
+
+                            except:
+                                print('msg in squad')
+
+                                parts = inPuTMsG.strip().split()
+                                print(response.Data.chat_type, uid, chat_id)
+                                message = f'[B][C]{get_random_color()}\nACITVE TarGeT -> {xMsGFixinG(uid)}\n'
+
+                                P = await SEndMsG(response.Data.chat_type, message, uid, chat_id, key, iv)
+
+                                uid2 = uid3 = uid4 = uid5 = uid6 = None
+                                s = False
+
+                                try:
+                                    uid = int(parts[1])
+                                    uid2 = int(parts[2])
+                                    uid3 = int(parts[3])
+                                    uid4 = int(parts[4])
+                                    uid5 = int(parts[5])
+                                    uid6 = int(parts[6])
+                                    idT = int(parts[6])
+
+                                except ValueError as ve:
+                                    print("ValueError:", ve)
+                                    s = True
+
+                                except Exception:
+                                    idT = len(parts) - 1
+                                    idT = int(parts[idT])
+                                    print(idT)
+                                    print(uid)
+
+                                if not s:
+                                    try:
+                                        await SEndPacKeT(whisper_writer, online_writer, 'ChaT', P)
+
+                                        H = await Emote_k(uid, idT, key, iv,region)
+                                        await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+
+                                        if uid2:
+                                            H = await Emote_k(uid2, idT, key, iv,region)
+                                            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                        if uid3:
+                                            H = await Emote_k(uid3, idT, key, iv,region)
+                                            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                        if uid4:
+                                            H = await Emote_k(uid4, idT, key, iv,region)
+                                            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                        if uid5:
+                                            H = await Emote_k(uid5, idT, key, iv,region)
+                                            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                            if uid6:
+                                                H = await Emote_k(uid6, idT, key, iv, region)
+                                                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', H)
+                                        
+
+                                    except Exception as e:
+                                        pass
+
+
+                        if inPuTMsG in ("dev"):
+                            uid = response.Data.uid
+                            chat_id = response.Data.Chat_ID
+                            message = '/d <uid1> <uid2>... <emoteid> /f <uid1> <uid2>... <emoteid> for fast emote'
+                            P = await SEndMsG(response.Data.chat_type , message , uid , chat_id , key , iv)
+                            await SEndPacKeT(whisper_writer , online_writer , 'ChaT' , P)
                         response = None
                             
             whisper_writer.close() ; await whisper_writer.wait_closed() ; whisper_writer = None
+                    
+                    	
                     	
         except Exception as e: print(f"ErroR {ip}:{port} - {e}") ; whisper_writer = None
         await asyncio.sleep(reconnect_delay)
+# ---------------------- FLASK ROUTES ----------------------
 
-# ---------------------- FIXED PERFORM EMOTE LOGIC ----------------------
+loop = None
+
 async def perform_emote(team_code: str, uids: list, emote_id: int):
     global key, iv, region, online_writer, BOT_UID
 
@@ -331,52 +523,36 @@ async def perform_emote(team_code: str, uids: list, emote_id: int):
         raise Exception("Bot not connected")
 
     try:
-        # 1. JOIN SQUAD
+        # 1. JOIN SQUAD (Packet Send)
         EM = await GenJoinSquadsPacket(team_code, key, iv)
         await SEndPacKeT(None, online_writer, 'OnLine', EM)
         
-        # 2. WAIT LONGER (Fixes "Team Offline" visual bug)
-        # Give server time to register presence
-        await asyncio.sleep(0.8) 
+        # Thoda wait karo taaki server join confirm kar le (0.3s best hai)
+        await asyncio.sleep(0.3) 
 
-        # 3. OPTIONAL: OPEN SQUAD PACKET (Forces Online Status)
-        # If you have an OpenSquad function in xC4, use it here.
-        try:
-             # This simulates opening the squad menu, which wakes up the connection
-             OP = await OpEnSq(key, iv, region) 
-             await SEndPacKeT(None, online_writer, 'OnLine', OP)
-             await asyncio.sleep(0.3)
-        except:
-             pass
-
-        # 4. PERFORM EMOTE (Optimized Timing)
+        # 2. PERFORM EMOTE (Har player ke liye loop)
         for uid_str in uids:
             uid = int(uid_str)
             # Emote packet
             H = await Emote_k(uid, emote_id, key, iv, region)
             await SEndPacKeT(None, online_writer, 'OnLine', H)
-            # 0.1s is safer than 0.05s to ensure packet isn't dropped
-            await asyncio.sleep(0.12) 
+            # Thoda sa gap taaki packet mix na ho
+            await asyncio.sleep(0.05) 
 
-        # 5. CRITICAL WAIT BEFORE LEAVING (Fixes "Emote not showing")
-        # If you leave instantly, the emote packet is cancelled by the leave packet.
-        # Wait for the animation to actually play on the victim's screen.
-        await asyncio.sleep(1.5) 
-
-        # 6. LEAVE SQUAD
+        # 3. LEAVE SQUAD (Correct UID ke sath)
+        # Ab ye BOT_UID sahi wala lega jo login se aaya hai
         if BOT_UID:
              LV = await ExiT(BOT_UID, key, iv)
              await SEndPacKeT(None, online_writer, 'OnLine', LV)
         else:
              print("Error: BOT_UID not set, cannot leave!")
 
-        return {"status": "success", "message": "Emote done & bot left"}
+        return {"status": "success", "message": "Emote done & bot left instantly"}
 
     except Exception as e:
         print(f"Error performing emote: {e}")
         raise Exception(f"Failed to perform emote: {str(e)}")
 
-# ---------------------- FLASK ROUTES ----------------------
 
 @app.route('/join')
 def join_team():
@@ -403,12 +579,9 @@ def join_team():
     if not uids:
         return jsonify({"status": "error", "message": "Provide at least one UID"})
 
-    if loop:
-        asyncio.run_coroutine_threadsafe(
-            perform_emote(team_code, uids, emote_id), loop
-        )
-    else:
-        return jsonify({"status": "error", "message": "Bot Loop Not Ready"})
+    asyncio.run_coroutine_threadsafe(
+        perform_emote(team_code, uids, emote_id), loop
+    )
 
     return jsonify({
         "status": "success",
@@ -418,16 +591,20 @@ def join_team():
         "message": "Emote triggered"
     })
 
+
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+
 
 # ---------------------- MAIN BOT SYSTEM ----------------------
 
 async def MaiiiinE():
     global loop, key, iv, region, BOT_UID
+
+    # NOTE: Hardcoded BOT_UID removed. Will fetch automatically.
     
-    Uid, Pw = '4468571493', '10_NAJMI_ADMIN_DGR7Q'
+    Uid, Pw = '4468571524', '10_NAJMI_ADMIN_44T92'
 
     open_id, access_token = await GeNeRaTeAccEss(Uid, Pw)
     if not open_id or not access_token:
@@ -448,13 +625,14 @@ async def MaiiiinE():
     ToKen = MajoRLoGinauTh.token
     TarGeT = MajoRLoGinauTh.account_uid
     
+    # --- AUTO FIX: Set BOT_UID dynamically ---
     BOT_UID = int(TarGeT)
+    # -----------------------------------------
 
     key = MajoRLoGinauTh.key
     iv = MajoRLoGinauTh.iv
     timestamp = MajoRLoGinauTh.timestamp
 
-    # IMPORTANT: Update the global loop variable so Flask can find it
     loop = asyncio.get_running_loop()
 
     LoGinDaTa = await GetLoginData(UrL, PyL, ToKen)
@@ -494,12 +672,11 @@ async def MaiiiinE():
     print(f"\n - BoT STarTinG And OnLine on TarGet : {TarGeT} | BOT NAME : {acc_name}")
     print(" - BoT sTaTus > GooD | OnLinE ! (: \n")
 
-    # Start Flask only once
-    if not any(t.name == "FlaskThread" for t in threading.enumerate()):
-        flask_thread = threading.Thread(target=run_flask, name="FlaskThread", daemon=True)
-        flask_thread.start()
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
 
     await asyncio.gather(task1, task2)
+
 
 async def StarTinG():
     while True:
@@ -509,7 +686,7 @@ async def StarTinG():
             print("Token ExpiRed ! , ResTartinG")
         except Exception as e:
             print(f"ErroR TcP - {e} => ResTarTinG ...")
-            await asyncio.sleep(5) # Add delay before restart to prevent spam loop
+
 
 if __name__ == '__main__':
     asyncio.run(StarTinG())
