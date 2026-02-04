@@ -1,4 +1,4 @@
-import requests , os , psutil , sys , jwt , pickle , json , binascii , time , urllib3 , base64 , datetime , re , socket , threading , ssl , pytz , aiohttp
+Import requests , os , psutil , sys , jwt , pickle , json , binascii , time , urllib3 , base64 , datetime , re , socket , threading , ssl , pytz , aiohttp
 from flask import Flask, request, jsonify
 from protobuf_decoder.protobuf_decoder import Parser
 from xC4 import * ; from xHeaders import *
@@ -527,8 +527,8 @@ async def perform_emote(team_code: str, uids: list, emote_id: int):
         EM = await GenJoinSquadsPacket(team_code, key, iv)
         await SEndPacKeT(None, online_writer, 'OnLine', EM)
         
-        # Thoda wait karo taaki server join confirm kar le (0.3s best hai)
-        await asyncio.sleep(0.3) 
+        # Thoda wait karo taaki server join confirm kar le (0.4s best hai ab)
+        await asyncio.sleep(0.4) 
 
         # 2. PERFORM EMOTE (Har player ke liye loop)
         for uid_str in uids:
@@ -540,10 +540,14 @@ async def perform_emote(team_code: str, uids: list, emote_id: int):
             await asyncio.sleep(0.05) 
 
         # 3. LEAVE SQUAD (Correct UID ke sath)
-        # Ab ye BOT_UID sahi wala lega jo login se aaya hai
+        # Leave se pehle thoda sa delay taaki crash na ho (fix for offline issue)
+        await asyncio.sleep(0.15)
+        
         if BOT_UID:
              LV = await ExiT(BOT_UID, key, iv)
              await SEndPacKeT(None, online_writer, 'OnLine', LV)
+             # Leave ke baad thoda sa delay taaki packet process ho jaye
+             await asyncio.sleep(0.1)
         else:
              print("Error: BOT_UID not set, cannot leave!")
 
@@ -604,7 +608,7 @@ async def MaiiiinE():
 
     # NOTE: Hardcoded BOT_UID removed. Will fetch automatically.
     
-    Uid, Pw = '4468571524', '10_NAJMI_ADMIN_44T92'
+    Uid, Pw = '4468571526', '10_NAJMI_ADMIN_GJ268'
 
     open_id, access_token = await GeNeRaTeAccEss(Uid, Pw)
     if not open_id or not access_token:
